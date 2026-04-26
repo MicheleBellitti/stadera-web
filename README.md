@@ -135,7 +135,7 @@ These are run by you (the human, not CI), once per project. All the
 values referenced as `${X}` later show up as GitHub Variables / Secrets.
 
 ```sh
-PROJECT=stadera-prod
+PROJECT=...
 REGION=europe-west1
 REPO=stadera
 SERVICE=stadera-web
