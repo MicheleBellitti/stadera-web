@@ -1,5 +1,5 @@
 /**
- * Auth gate for everything under the `(authenticated)` route group.
+ * Auth gate + chrome for everything under the `(authenticated)` route group.
  *
  * The parentheses make `(authenticated)` a Next.js *route group*: it
  * doesn't show up in the URL (so `/dashboard` not `/authenticated/dashboard`)
@@ -14,14 +14,14 @@
  * - **Hard guard.** Even with JS disabled or a malicious client, the
  *   server simply won't render protected pages without a valid cookie.
  *
- * The downside is one extra `/me` request per protected page-load; the
- * inner pages re-fetch via TanStack Query for the actual user data they
- * need. Cheap in dev, and we can hydrate the Query cache from the server
- * later (M5+) if it becomes a hot path.
+ * The extra `/me` request per page-load is cheap; the inner pages
+ * re-fetch via TanStack Query for the data they need. We can hydrate the
+ * Query cache from the server later if it becomes a hot path.
  */
 
 import { redirect } from "next/navigation";
-import { getServerApi } from "../../lib/api/server";
+import { MobileBar, Sidebar } from "@/components/nav";
+import { getServerApi } from "@/lib/api/server";
 
 export default async function AuthenticatedLayout({
 	children,
@@ -39,5 +39,15 @@ export default async function AuthenticatedLayout({
 		throw new Error(`auth check failed: backend returned ${response.status}`);
 	}
 
-	return <>{children}</>;
+	return (
+		<div className="flex flex-1 min-h-full">
+			<Sidebar />
+			<div className="flex flex-1 flex-col">
+				<MobileBar />
+				<main className="flex-1 overflow-y-auto px-4 py-6 md:px-8 md:py-10">
+					{children}
+				</main>
+			</div>
+		</div>
+	);
 }
