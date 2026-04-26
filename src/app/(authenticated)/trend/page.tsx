@@ -19,9 +19,9 @@
 import { format } from "date-fns";
 import { useState } from "react";
 import {
+	Area,
+	AreaChart,
 	CartesianGrid,
-	Line,
-	LineChart,
 	ResponsiveContainer,
 	Tooltip,
 	XAxis,
@@ -117,13 +117,35 @@ function TrendChart({ data }: { data: TrendData }) {
 		weight: m.weight_kg,
 	}));
 
+	// Y-axis padding: pad domain by ~5% of range so the line never
+	// touches the top/bottom edges. `["auto", "auto"]` Recharts default
+	// is too tight, especially when weight wiggles in a 1-2 kg band.
+	const values = points.map((p) => p.weight);
+	const yMin = Math.min(...values);
+	const yMax = Math.max(...values);
+	const yPad = Math.max(0.5, (yMax - yMin) * 0.15);
+
 	return (
 		<ResponsiveContainer width="100%" height={320}>
-			<LineChart
+			<AreaChart
 				data={points}
-				margin={{ top: 8, right: 16, bottom: 8, left: 0 }}
+				margin={{ top: 12, right: 16, bottom: 8, left: 0 }}
 			>
-				<CartesianGrid strokeDasharray="3 3" stroke="var(--border)" />
+				<defs>
+					{/* Soft area fill under the line — gradient from brand color
+					 * at the top fading to transparent at the bottom. Standard
+					 * health-app chart treatment, gives the line visual weight
+					 * without dominating the canvas. */}
+					<linearGradient id="trend-gradient" x1="0" y1="0" x2="0" y2="1">
+						<stop offset="0%" stopColor="var(--brand)" stopOpacity={0.25} />
+						<stop offset="100%" stopColor="var(--brand)" stopOpacity={0} />
+					</linearGradient>
+				</defs>
+				<CartesianGrid
+					strokeDasharray="3 3"
+					stroke="var(--border)"
+					vertical={false}
+				/>
 				<XAxis
 					dataKey="t"
 					type="number"
@@ -131,12 +153,17 @@ function TrendChart({ data }: { data: TrendData }) {
 					tickFormatter={(t: number) => format(new Date(t), "d MMM")}
 					stroke="var(--muted-foreground)"
 					fontSize={12}
+					tickLine={false}
+					axisLine={{ stroke: "var(--border)" }}
 				/>
 				<YAxis
-					domain={["auto", "auto"]}
+					domain={[yMin - yPad, yMax + yPad]}
 					stroke="var(--muted-foreground)"
 					fontSize={12}
-					width={40}
+					width={48}
+					tickLine={false}
+					axisLine={false}
+					tickFormatter={(v: number) => v.toFixed(1)}
 				/>
 				<Tooltip
 					labelFormatter={(t) =>
@@ -151,17 +178,20 @@ function TrendChart({ data }: { data: TrendData }) {
 						border: "1px solid var(--border)",
 						borderRadius: "var(--radius-md)",
 						color: "var(--popover-foreground)",
+						boxShadow: "var(--shadow-md)",
 					}}
+					cursor={{ stroke: "var(--border)", strokeWidth: 1 }}
 				/>
-				<Line
+				<Area
 					type="monotone"
 					dataKey="weight"
-					stroke="var(--chart-1)"
+					stroke="var(--brand)"
 					strokeWidth={2}
-					dot={{ r: 2 }}
-					activeDot={{ r: 4 }}
+					fill="url(#trend-gradient)"
+					dot={false}
+					activeDot={{ r: 4, fill: "var(--brand)" }}
 				/>
-			</LineChart>
+			</AreaChart>
 		</ResponsiveContainer>
 	);
 }

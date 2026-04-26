@@ -26,7 +26,12 @@
 @custom-variant dark (&:is(.dark *));
 
 :root {
-	--background: oklch(1 0 0);
+	/* Surfaces — warm off-white background, pure white cards.
+	 * The slight warmth on background creates depth: card-on-bg has a
+	 * tonal contrast even before the shadow lands. Pure-white-on-white
+	 * looks flat and cheap.
+	 */
+	--background: oklch(0.985 0.002 220);
 	--foreground: oklch(0.145 0 0);
 	--card: oklch(1 0 0);
 	--card-foreground: oklch(0.145 0 0);
@@ -42,87 +47,108 @@
 	--accent-foreground: oklch(0.205 0 0);
 	--destructive: oklch(0.577 0.245 27.325);
 	--destructive-foreground: oklch(0.985 0 0);
-	--border: oklch(0.922 0 0);
+	--border: oklch(0.922 0.002 220);
 	--input: oklch(0.922 0 0);
-	--ring: oklch(0.708 0 0);
-	--chart-1: oklch(0.646 0.222 41.116);
-	--chart-2: oklch(0.6 0.118 184.704);
-	--chart-3: oklch(0.398 0.07 227.392);
-	--chart-4: oklch(0.828 0.189 84.429);
-	--chart-5: oklch(0.769 0.188 70.08);
-	--radius: 0.625rem;
-	--sidebar: oklch(0.985 0 0);
-	--sidebar-foreground: oklch(0.145 0 0);
-	--sidebar-primary: oklch(0.205 0 0);
+	--ring: oklch(0.55 0.13 215);
+
+	/* Semantic data colors. `positive` (green) and `negative` (terracotta)
+	 * are goal-dependent: the parent component decides which way is good.
+	 * E.g. for weight in a cutting goal, going DOWN is positive →
+	 * `tone="positive"` plus `direction="down"`. The Sparkline / KpiCard
+	 * only see `tone` and use these tokens for color. Hue choices are
+	 * tuned for protanopia (most common color-blindness form): both
+	 * remain distinguishable from each other and from neutral grey.
+	 *
+	 * Brand is a calm blue-teal: distinct from Withings cyan, signals
+	 * "data" rather than "warning".
+	 */
+	--brand: oklch(0.55 0.13 215);
+	--brand-foreground: oklch(0.99 0 0);
+	--positive: oklch(0.55 0.14 155);
+	--negative: oklch(0.62 0.18 35);
+	--neutral: oklch(0.62 0 0);
+
+	/* Chart palette — recurrent colors used by Recharts. Tuned so that
+	 * each pair has enough perceptual distance to read distinct in a
+	 * mono-color stacked or overlaid chart.
+	 */
+	--chart-1: oklch(0.55 0.13 215);
+	--chart-2: oklch(0.65 0.13 175);
+	--chart-3: oklch(0.6 0.14 145);
+	--chart-4: oklch(0.7 0.14 75);
+	--chart-5: oklch(0.55 0.16 305);
+
+	--radius: 0.75rem;
+
+	/* Sidebar — slight cool tone to differentiate from main canvas.
+	 * Active state uses the brand color at low chroma. */
+	--sidebar: oklch(0.985 0.003 220);
+	--sidebar-foreground: oklch(0.205 0 0);
+	--sidebar-primary: oklch(0.55 0.13 215);
 	--sidebar-primary-foreground: oklch(0.985 0 0);
-	--sidebar-accent: oklch(0.97 0 0);
+	--sidebar-accent: oklch(0.96 0.005 220);
 	--sidebar-accent-foreground: oklch(0.205 0 0);
-	--sidebar-border: oklch(0.922 0 0);
-	--sidebar-ring: oklch(0.708 0 0);
+	--sidebar-border: oklch(0.92 0.003 220);
+	--sidebar-ring: oklch(0.55 0.13 215);
+
+	/* Custom shadows — softer + more elevation steps than shadcn default.
+	 * Inspired by health-app card stacking (Withings, Apple Health). */
+	--shadow-xs: 0 1px 2px 0 oklch(0 0 0 / 0.04);
+	--shadow-sm: 0 1px 3px 0 oklch(0 0 0 / 0.06), 0 1px 2px -1px oklch(0 0 0 / 0.04);
+	--shadow-md: 0 4px 12px -2px oklch(0 0 0 / 0.06), 0 2px 4px -2px oklch(0 0 0 / 0.04);
+	--shadow-lg: 0 10px 30px -5px oklch(0 0 0 / 0.08), 0 4px 8px -4px oklch(0 0 0 / 0.04);
 }
 
 .dark {
-	--background: oklch(0.145 0 0);
-	--foreground: oklch(0.985 0 0);
-	--card: oklch(0.205 0 0);
-	--card-foreground: oklch(0.985 0 0);
-	--popover: oklch(0.205 0 0);
-	--popover-foreground: oklch(0.985 0 0);
-	--primary: oklch(0.922 0 0);
+	--background: oklch(0.18 0.005 220);
+	--foreground: oklch(0.97 0 0);
+	--card: oklch(0.22 0.005 220);
+	--card-foreground: oklch(0.97 0 0);
+	--popover: oklch(0.22 0.005 220);
+	--popover-foreground: oklch(0.97 0 0);
+	--primary: oklch(0.92 0 0);
 	--primary-foreground: oklch(0.205 0 0);
-	--secondary: oklch(0.269 0 0);
-	--secondary-foreground: oklch(0.985 0 0);
-	--muted: oklch(0.269 0 0);
-	--muted-foreground: oklch(0.708 0 0);
-	--accent: oklch(0.269 0 0);
-	--accent-foreground: oklch(0.985 0 0);
-	--destructive: oklch(0.704 0.191 22.216);
-	--destructive-foreground: oklch(0.985 0 0);
+	--secondary: oklch(0.27 0.005 220);
+	--secondary-foreground: oklch(0.97 0 0);
+	--muted: oklch(0.27 0.005 220);
+	--muted-foreground: oklch(0.7 0 0);
+	--accent: oklch(0.27 0.005 220);
+	--accent-foreground: oklch(0.97 0 0);
+	--destructive: oklch(0.7 0.18 25);
+	--destructive-foreground: oklch(0.97 0 0);
 	--border: oklch(1 0 0 / 10%);
 	--input: oklch(1 0 0 / 15%);
-	--ring: oklch(0.556 0 0);
-	--chart-1: oklch(0.488 0.243 264.376);
-	--chart-2: oklch(0.696 0.17 162.48);
-	--chart-3: oklch(0.769 0.188 70.08);
-	--chart-4: oklch(0.627 0.265 303.9);
-	--chart-5: oklch(0.645 0.246 16.439);
-	--sidebar: oklch(0.205 0 0);
-	--sidebar-foreground: oklch(0.985 0 0);
-	--sidebar-primary: oklch(0.488 0.243 264.376);
-	--sidebar-primary-foreground: oklch(0.985 0 0);
-	--sidebar-accent: oklch(0.269 0 0);
-	--sidebar-accent-foreground: oklch(0.985 0 0);
+	--ring: oklch(0.65 0.13 215);
+
+	--brand: oklch(0.65 0.13 215);
+	--brand-foreground: oklch(0.18 0.005 220);
+	--positive: oklch(0.7 0.16 155);
+	--negative: oklch(0.72 0.18 35);
+	--neutral: oklch(0.65 0 0);
+
+	--chart-1: oklch(0.65 0.13 215);
+	--chart-2: oklch(0.72 0.13 175);
+	--chart-3: oklch(0.7 0.14 145);
+	--chart-4: oklch(0.78 0.14 75);
+	--chart-5: oklch(0.7 0.16 305);
+
+	--sidebar: oklch(0.205 0.005 220);
+	--sidebar-foreground: oklch(0.97 0 0);
+	--sidebar-primary: oklch(0.65 0.13 215);
+	--sidebar-primary-foreground: oklch(0.18 0.005 220);
+	--sidebar-accent: oklch(0.27 0.005 220);
+	--sidebar-accent-foreground: oklch(0.97 0 0);
 	--sidebar-border: oklch(1 0 0 / 10%);
-	--sidebar-ring: oklch(0.556 0 0);
+	--sidebar-ring: oklch(0.65 0.13 215);
 }
 
+/* Honor system preference when no explicit `.light` / `.dark` class is
+ * present. Just apply `color-scheme: dark` to enable native UA styling
+ * (form controls, scrollbars). The actual color tokens are picked up
+ * from the `.dark` class which a future toggle will add to <html>. */
 @media (prefers-color-scheme: dark) {
 	:root:not(.light) {
 		color-scheme: dark;
-		--background: oklch(0.145 0 0);
-		--foreground: oklch(0.985 0 0);
-		--card: oklch(0.205 0 0);
-		--card-foreground: oklch(0.985 0 0);
-		--popover: oklch(0.205 0 0);
-		--popover-foreground: oklch(0.985 0 0);
-		--primary: oklch(0.922 0 0);
-		--primary-foreground: oklch(0.205 0 0);
-		--secondary: oklch(0.269 0 0);
-		--secondary-foreground: oklch(0.985 0 0);
-		--muted: oklch(0.269 0 0);
-		--muted-foreground: oklch(0.708 0 0);
-		--accent: oklch(0.269 0 0);
-		--accent-foreground: oklch(0.985 0 0);
-		--destructive: oklch(0.704 0.191 22.216);
-		--destructive-foreground: oklch(0.985 0 0);
-		--border: oklch(1 0 0 / 10%);
-		--input: oklch(1 0 0 / 15%);
-		--ring: oklch(0.556 0 0);
-		--sidebar: oklch(0.205 0 0);
-		--sidebar-foreground: oklch(0.985 0 0);
-		--sidebar-accent: oklch(0.269 0 0);
-		--sidebar-accent-foreground: oklch(0.985 0 0);
-		--sidebar-border: oklch(1 0 0 / 10%);
 	}
 }
 
@@ -159,12 +185,24 @@
 	--color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
 	--color-sidebar-border: var(--sidebar-border);
 	--color-sidebar-ring: var(--sidebar-ring);
+
+	/* Custom semantic colors — usable as `bg-brand`, `text-positive`, … */
+	--color-brand: var(--brand);
+	--color-brand-foreground: var(--brand-foreground);
+	--color-positive: var(--positive);
+	--color-negative: var(--negative);
+	--color-neutral: var(--neutral);
+
 	--font-sans: var(--font-geist-sans);
 	--font-mono: var(--font-geist-mono);
 	--radius-sm: calc(var(--radius) - 4px);
 	--radius-md: calc(var(--radius) - 2px);
 	--radius-lg: var(--radius);
 	--radius-xl: calc(var(--radius) + 4px);
+
+	/* Soft shadow tokens for cards / hover lifts. */
+	--shadow-card: var(--shadow-sm);
+	--shadow-card-hover: var(--shadow-md);
 }
 
 @layer base {
