@@ -1,0 +1,29 @@
+{
+  "name": "stadera-web",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "dev": "next dev",
+    "build": "next build",
+    "start": "next start",
+    "check": "biome check --write ./src",
+    "lint": "biome lint --write ./src",
+    "format": "biome format --write ./src",
+    "typecheck": "tsc --noEmit",
+    "ci": "biome check ./src && tsc --noEmit && next build"
+  },
+  "dependencies": {
+    "next": "16.2.4",
+    "react": "19.2.4",
+    "react-dom": "19.2.4"
+  },
+  "devDependencies": {
+    "@biomejs/biome": "2.4.13",
+    "@tailwindcss/postcss": "^4",
+    "@types/node": "^20",
+    "@types/react": "^19",
+    "@types/react-dom": "^19",
+    "tailwindcss": "^4",
+    "typescript": "^5"
+  }
+}
