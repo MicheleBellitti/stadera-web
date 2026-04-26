@@ -1,0 +1,95 @@
+# Build + deploy stadera-web to Cloud Run on every push to main.
+#
+# Auth flow: GitHub OIDC token → Workload Identity Federation → GCP
+# service account. No JSON keys to rotate or leak.
+#
+# One-time GCP setup (see README "Deploy" section for full commands):
+#   - Artifact Registry repo `stadera` in $GCP_REGION
+#   - Service account `stadera-web-deployer@stadera-prod.iam` with
+#     roles/run.admin, roles/artifactregistry.writer, roles/iam.serviceAccountUser
+#   - Workload Identity Pool + Provider tied to this GitHub repo
+#
+# GitHub variables (Settings → Secrets and variables → Actions → Variables):
+#   GCP_PROJECT             e.g. stadera-prod
+#   GCP_REGION              e.g. europe-west1
+#   ARTIFACT_REGISTRY_REPO  e.g. stadera
+#   CLOUD_RUN_SERVICE       e.g. stadera-web
+#   BACKEND_API_URL         e.g. https://api.stadera.app   (baked into JS bundle)
+#
+# GitHub secrets:
+#   WIF_PROVIDER            projects/<num>/locations/global/workloadIdentityPools/<pool>/providers/<provider>
+#   WIF_SERVICE_ACCOUNT     stadera-web-deployer@stadera-prod.iam.gserviceaccount.com
+
+name: Deploy
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+# OIDC requires id-token: write. contents: read is the rest.
+permissions:
+  contents: read
+  id-token: write
+
+# A second push to main while a deploy is running cancels the older one —
+# we always want the newest commit live.
+concurrency:
+  group: deploy-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+
+    env:
+      IMAGE: ${{ vars.GCP_REGION }}-docker.pkg.dev/${{ vars.GCP_PROJECT }}/${{ vars.ARTIFACT_REGISTRY_REPO }}/${{ vars.CLOUD_RUN_SERVICE }}
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - id: auth
+        uses: google-github-actions/auth@v2
+        with:
+          workload_identity_provider: ${{ secrets.WIF_PROVIDER }}
+          service_account: ${{ secrets.WIF_SERVICE_ACCOUNT }}
+
+      - uses: google-github-actions/setup-gcloud@v2
+
+      - name: Configure Docker for Artifact Registry
+        run: gcloud auth configure-docker ${{ vars.GCP_REGION }}-docker.pkg.dev --quiet
+
+      - name: Build image
+        # NEXT_PUBLIC_API_URL is inlined into the JS bundle by next build;
+        # it's a build-arg, not a runtime env var.
+        run: |
+          docker build \
+            --build-arg NEXT_PUBLIC_API_URL="${{ vars.BACKEND_API_URL }}" \
+            -t "$IMAGE:${{ github.sha }}" \
+            -t "$IMAGE:latest" \
+            .
+
+      - name: Push image
+        run: |
+          docker push "$IMAGE:${{ github.sha }}"
+          docker push "$IMAGE:latest"
+
+      - name: Deploy to Cloud Run
+        uses: google-github-actions/deploy-cloudrun@v2
+        with:
+          service: ${{ vars.CLOUD_RUN_SERVICE }}
+          region: ${{ vars.GCP_REGION }}
+          image: ${{ env.IMAGE }}:${{ github.sha }}
+          # min-instances=0 → scale-to-zero. Cold start is ~1s for a Next
+          # standalone server. max-instances guards runaway costs.
+          # cpu=1 / memory=512Mi is the cheapest tier that runs Next
+          # comfortably; bump if metrics show we hit limits.
+          flags: >-
+            --port=3000
+            --allow-unauthenticated
+            --min-instances=0
+            --max-instances=3
+            --cpu=1
+            --memory=512Mi
+            --timeout=60

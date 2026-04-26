@@ -66,10 +66,21 @@ In dev:
 - `NEXT_PUBLIC_API_URL` — backend base URL. Defaults to `http://localhost:8080`
   if missing. `NEXT_PUBLIC_*` vars are inlined at build time.
 
-## Deploy target
+## Deploy
 
 GCP **Cloud Run** (containerized Next.js, scale-to-zero), unified with the
-backend. Vercel is the fallback. Dockerfile and CI/CD wired up in M7.
+backend. Vercel is the documented fallback if Cloud Run becomes painful.
+
+- `Dockerfile` is multi-stage (deps → builder → runner) and emits a
+  Next.js `output: 'standalone'` bundle. Final image ~180 MB.
+- `.github/workflows/deploy.yml` builds + pushes to Artifact Registry +
+  deploys to Cloud Run on every push to `main`. Auth via Workload
+  Identity Federation — **no JSON keys**.
+- `NEXT_PUBLIC_*` vars are baked at build time, so the deploy workflow
+  passes `BACKEND_API_URL` as a Docker build-arg.
+
+GCP setup commands and the GitHub Variables/Secrets to set are in
+`README.md` under "Deploy".
 
 ## Project doc home
 
