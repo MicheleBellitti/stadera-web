@@ -1,0 +1,416 @@
+{
+	"openapi": "3.1.0",
+	"info": {
+		"title": "Stadera API",
+		"description": "Personal weight tracking and nutrition coaching API.",
+		"license": { "name": "MIT" },
+		"version": "0.1.0"
+	},
+	"paths": {
+		"/health": {
+			"get": {
+				"tags": ["health"],
+				"operationId": "health",
+				"responses": {
+					"200": {
+						"description": "Process is alive",
+						"content": {
+							"application/json": {
+								"schema": { "$ref": "#/components/schemas/HealthResponse" }
+							}
+						}
+					}
+				}
+			}
+		},
+		"/history": {
+			"get": {
+				"tags": ["measurements"],
+				"operationId": "history",
+				"parameters": [
+					{
+						"name": "from",
+						"in": "query",
+						"description": "Inclusive lower bound (RFC 3339).",
+						"required": true,
+						"schema": { "type": "string", "format": "date-time" }
+					},
+					{
+						"name": "to",
+						"in": "query",
+						"description": "Exclusive upper bound (RFC 3339).",
+						"required": true,
+						"schema": { "type": "string", "format": "date-time" }
+					}
+				],
+				"responses": {
+					"200": {
+						"description": "Measurements in `[from, to)`",
+						"content": {
+							"application/json": {
+								"schema": { "$ref": "#/components/schemas/HistoryResponse" }
+							}
+						}
+					},
+					"400": {
+						"description": "Invalid window",
+						"content": {
+							"application/json": {
+								"schema": { "$ref": "#/components/schemas/ErrorBody" }
+							}
+						}
+					},
+					"401": {
+						"description": "Missing or invalid session",
+						"content": {
+							"application/json": {
+								"schema": { "$ref": "#/components/schemas/ErrorBody" }
+							}
+						}
+					}
+				},
+				"security": [{ "session_cookie": [] }]
+			}
+		},
+		"/me": {
+			"get": {
+				"tags": ["user"],
+				"operationId": "me",
+				"responses": {
+					"200": {
+						"description": "Current authenticated user",
+						"content": {
+							"application/json": {
+								"schema": { "$ref": "#/components/schemas/MeResponse" }
+							}
+						}
+					},
+					"401": {
+						"description": "Missing or invalid session",
+						"content": {
+							"application/json": {
+								"schema": { "$ref": "#/components/schemas/ErrorBody" }
+							}
+						}
+					}
+				},
+				"security": [{ "session_cookie": [] }]
+			}
+		},
+		"/profile": {
+			"get": {
+				"tags": ["profile"],
+				"operationId": "get_profile",
+				"responses": {
+					"200": {
+						"description": "Current profile",
+						"content": {
+							"application/json": {
+								"schema": { "$ref": "#/components/schemas/ProfileView" }
+							}
+						}
+					},
+					"401": {
+						"description": "Missing or invalid session",
+						"content": {
+							"application/json": {
+								"schema": { "$ref": "#/components/schemas/ErrorBody" }
+							}
+						}
+					},
+					"404": {
+						"description": "Profile not yet set",
+						"content": {
+							"application/json": {
+								"schema": { "$ref": "#/components/schemas/ErrorBody" }
+							}
+						}
+					}
+				},
+				"security": [{ "session_cookie": [] }]
+			},
+			"put": {
+				"tags": ["profile"],
+				"operationId": "put_profile",
+				"requestBody": {
+					"content": {
+						"application/json": {
+							"schema": { "$ref": "#/components/schemas/ProfilePayload" }
+						}
+					},
+					"required": true
+				},
+				"responses": {
+					"204": { "description": "Profile saved" },
+					"400": {
+						"description": "Invalid field",
+						"content": {
+							"application/json": {
+								"schema": { "$ref": "#/components/schemas/ErrorBody" }
+							}
+						}
+					},
+					"401": {
+						"description": "Missing or invalid session",
+						"content": {
+							"application/json": {
+								"schema": { "$ref": "#/components/schemas/ErrorBody" }
+							}
+						}
+					}
+				},
+				"security": [{ "session_cookie": [] }]
+			}
+		},
+		"/today": {
+			"get": {
+				"tags": ["measurements"],
+				"operationId": "today",
+				"responses": {
+					"200": {
+						"description": "Today's KPIs",
+						"content": {
+							"application/json": {
+								"schema": { "$ref": "#/components/schemas/TodayResponse" }
+							}
+						}
+					},
+					"401": {
+						"description": "Missing or invalid session",
+						"content": {
+							"application/json": {
+								"schema": { "$ref": "#/components/schemas/ErrorBody" }
+							}
+						}
+					}
+				},
+				"security": [{ "session_cookie": [] }]
+			}
+		},
+		"/trend": {
+			"get": {
+				"tags": ["measurements"],
+				"operationId": "trend",
+				"parameters": [
+					{
+						"name": "days",
+						"in": "query",
+						"description": "Window length in days (default 30, max 365).",
+						"required": false,
+						"schema": { "type": "integer", "format": "int64" }
+					}
+				],
+				"responses": {
+					"200": {
+						"description": "Measurements + aggregate stats over the window",
+						"content": {
+							"application/json": {
+								"schema": { "$ref": "#/components/schemas/TrendResponse" }
+							}
+						}
+					},
+					"400": {
+						"description": "`days` out of range",
+						"content": {
+							"application/json": {
+								"schema": { "$ref": "#/components/schemas/ErrorBody" }
+							}
+						}
+					},
+					"401": {
+						"description": "Missing or invalid session",
+						"content": {
+							"application/json": {
+								"schema": { "$ref": "#/components/schemas/ErrorBody" }
+							}
+						}
+					}
+				},
+				"security": [{ "session_cookie": [] }]
+			}
+		}
+	},
+	"components": {
+		"schemas": {
+			"DailyTargetView": {
+				"type": "object",
+				"required": ["kcal", "protein_g"],
+				"properties": {
+					"kcal": { "type": "number", "format": "double" },
+					"protein_g": { "type": "number", "format": "double" }
+				}
+			},
+			"ErrorBody": {
+				"type": "object",
+				"description": "JSON shape of every error response.",
+				"required": ["error", "message"],
+				"properties": {
+					"error": {
+						"type": "string",
+						"description": "Stable machine-readable error code (e.g. `not_found`, `unauthorized`)."
+					},
+					"message": {
+						"type": "string",
+						"description": "Human-readable error message."
+					}
+				}
+			},
+			"HealthResponse": {
+				"type": "object",
+				"required": ["status"],
+				"properties": { "status": { "type": "string" } }
+			},
+			"HistoryResponse": {
+				"type": "object",
+				"required": ["from", "to", "measurements"],
+				"properties": {
+					"from": { "type": "string", "format": "date-time" },
+					"measurements": {
+						"type": "array",
+						"items": { "$ref": "#/components/schemas/MeasurementView" }
+					},
+					"to": { "type": "string", "format": "date-time" }
+				}
+			},
+			"MeResponse": {
+				"type": "object",
+				"required": ["id", "email", "name"],
+				"properties": {
+					"email": { "type": "string" },
+					"id": { "type": "string", "format": "uuid" },
+					"name": { "type": "string" }
+				}
+			},
+			"MeasurementView": {
+				"type": "object",
+				"description": "Wire shape of a single measurement.",
+				"required": ["taken_at", "weight_kg", "source"],
+				"properties": {
+					"body_fat_percent": {
+						"type": ["number", "null"],
+						"format": "double"
+					},
+					"lean_mass_kg": { "type": ["number", "null"], "format": "double" },
+					"source": {
+						"type": "string",
+						"description": "Provenance of the reading. One of: `withings`, `manual`."
+					},
+					"taken_at": { "type": "string", "format": "date-time" },
+					"weight_kg": { "type": "number", "format": "double" }
+				}
+			},
+			"ProfilePayload": {
+				"type": "object",
+				"required": [
+					"sex",
+					"birth_date",
+					"height_cm",
+					"activity_level",
+					"goal_weight_kg"
+				],
+				"properties": {
+					"activity_level": {
+						"type": "string",
+						"description": "One of: `sedentary`, `lightly_active`, `moderately_active`, `very_active`."
+					},
+					"birth_date": { "type": "string", "format": "date" },
+					"goal_weight_kg": { "type": "number", "format": "double" },
+					"height_cm": { "type": "number", "format": "double" },
+					"sex": {
+						"type": "string",
+						"description": "One of: `male`, `female`."
+					}
+				}
+			},
+			"ProfileView": {
+				"type": "object",
+				"required": [
+					"birth_date",
+					"sex",
+					"height_cm",
+					"activity_level",
+					"goal_weight_kg"
+				],
+				"properties": {
+					"activity_level": {
+						"type": "string",
+						"description": "One of: `sedentary`, `lightly_active`, `moderately_active`, `very_active`."
+					},
+					"birth_date": { "type": "string", "format": "date" },
+					"goal_weight_kg": { "type": "number", "format": "double" },
+					"height_cm": { "type": "number", "format": "double" },
+					"sex": {
+						"type": "string",
+						"description": "One of: `male`, `female`."
+					}
+				}
+			},
+			"TodayResponse": {
+				"type": "object",
+				"required": ["user"],
+				"properties": {
+					"bmi": { "type": ["number", "null"], "format": "double" },
+					"daily_target": {
+						"oneOf": [
+							{ "type": "null" },
+							{ "$ref": "#/components/schemas/DailyTargetView" }
+						]
+					},
+					"latest": {
+						"oneOf": [
+							{ "type": "null" },
+							{ "$ref": "#/components/schemas/MeasurementView" }
+						]
+					},
+					"user": { "$ref": "#/components/schemas/UserView" },
+					"weekly_delta_kg": { "type": ["number", "null"], "format": "double" }
+				}
+			},
+			"TrendResponse": {
+				"type": "object",
+				"required": ["from", "to", "measurements"],
+				"properties": {
+					"from": { "type": "string", "format": "date-time" },
+					"measurements": {
+						"type": "array",
+						"items": { "$ref": "#/components/schemas/MeasurementView" }
+					},
+					"moving_average_7d_kg": {
+						"type": ["number", "null"],
+						"format": "double"
+					},
+					"to": { "type": "string", "format": "date-time" },
+					"weekly_delta_kg": { "type": ["number", "null"], "format": "double" }
+				}
+			},
+			"UserView": {
+				"type": "object",
+				"required": ["id", "email", "name"],
+				"properties": {
+					"email": { "type": "string" },
+					"id": { "type": "string", "format": "uuid" },
+					"name": { "type": "string" }
+				}
+			}
+		},
+		"securitySchemes": {
+			"session_cookie": {
+				"type": "apiKey",
+				"in": "cookie",
+				"name": "stadera_session"
+			}
+		}
+	},
+	"tags": [
+		{ "name": "health", "description": "System health" },
+		{ "name": "user", "description": "Current authenticated user" },
+		{
+			"name": "measurements",
+			"description": "Weight measurements and aggregate trends"
+		},
+		{
+			"name": "profile",
+			"description": "Metabolic profile (height, sex, activity, goal)"
+		}
+	]
+}

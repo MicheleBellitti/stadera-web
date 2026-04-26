@@ -1,0 +1,56 @@
+# GitHub Actions CI — runs the same `pnpm verify` pipeline a developer
+# runs locally.
+#
+# (The script is not named `ci` because pnpm 10 reserves that name for an
+# upcoming `npm-ci`-compatible command. `pnpm verify` is the closest free
+# verb.)
+#
+# `pnpm verify` is composed of:
+#   1. `biome check` (lint + format, no auto-fix)
+#   2. `pnpm api:types` regenerates `src/lib/api/types.ts` from the
+#      committed OpenAPI snapshot
+#   3. `git diff --exit-code` ensures the regenerated types match the
+#      committed ones — catches the case where someone updated
+#      `openapi.json` but forgot to re-run codegen
+#   4. `tsc --noEmit` strict typecheck
+#   5. `next build` production build
+#
+# We deliberately do NOT run codegen against a live backend in CI — the
+# backend lives in another repo and bringing it up would couple two
+# services' deploy lifecycles. The committed snapshot is the contract.
+
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+# Cancel in-progress runs on the same ref — saves CI minutes when a PR
+# gets force-pushed.
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  ci:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: pnpm verify
+        run: pnpm verify
