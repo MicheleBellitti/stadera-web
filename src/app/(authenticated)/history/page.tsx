@@ -29,6 +29,7 @@ import {
 	TableRow,
 } from "@/components/ui/table";
 import { useHistory } from "@/lib/api/queries";
+import { cn } from "@/lib/utils";
 
 const WINDOWS = [
 	{ days: 7, label: "7d" },
@@ -94,44 +95,67 @@ export default function HistoryPage() {
 						</p>
 					)}
 					{data && data.measurements.length > 0 && (
-						<Table>
-							<TableHeader>
-								<TableRow>
-									<TableHead>Date</TableHead>
-									<TableHead className="text-right">Weight (kg)</TableHead>
-									<TableHead className="text-right">Body fat (%)</TableHead>
-									<TableHead className="text-right">Lean mass (kg)</TableHead>
-									<TableHead>Source</TableHead>
-								</TableRow>
-							</TableHeader>
-							<TableBody>
-								{[...data.measurements].reverse().map((m) => (
-									<TableRow key={`${m.taken_at}-${m.source}`}>
-										<TableCell className="font-mono text-xs text-muted-foreground">
-											{format(new Date(m.taken_at), "d MMM yyyy, HH:mm")}
-										</TableCell>
-										<TableCell className="text-right tabular-nums">
-											{m.weight_kg.toFixed(2)}
-										</TableCell>
-										<TableCell className="text-right tabular-nums">
-											{m.body_fat_percent != null
-												? m.body_fat_percent.toFixed(1)
-												: "—"}
-										</TableCell>
-										<TableCell className="text-right tabular-nums">
-											{m.lean_mass_kg != null ? m.lean_mass_kg.toFixed(2) : "—"}
-										</TableCell>
-										<TableCell className="capitalize text-muted-foreground">
-											{m.source}
-										</TableCell>
+						<div className="max-h-[70vh] overflow-y-auto">
+							<Table>
+								<TableHeader className="sticky top-0 z-10 bg-card">
+									<TableRow>
+										<TableHead>Date</TableHead>
+										<TableHead className="text-right">Weight (kg)</TableHead>
+										<TableHead className="text-right">Body fat (%)</TableHead>
+										<TableHead className="text-right">Lean mass (kg)</TableHead>
+										<TableHead>Source</TableHead>
 									</TableRow>
-								))}
-							</TableBody>
-						</Table>
+								</TableHeader>
+								<TableBody>
+									{[...data.measurements].reverse().map((m) => (
+										<TableRow key={`${m.taken_at}-${m.source}`}>
+											<TableCell className="font-mono text-xs text-muted-foreground">
+												{format(new Date(m.taken_at), "d MMM yyyy, HH:mm")}
+											</TableCell>
+											<TableCell className="text-right tabular-nums font-medium">
+												{m.weight_kg.toFixed(2)}
+											</TableCell>
+											<TableCell className="text-right tabular-nums">
+												{m.body_fat_percent != null
+													? m.body_fat_percent.toFixed(1)
+													: "—"}
+											</TableCell>
+											<TableCell className="text-right tabular-nums">
+												{m.lean_mass_kg != null
+													? m.lean_mass_kg.toFixed(2)
+													: "—"}
+											</TableCell>
+											<TableCell>
+												<SourcePill source={m.source} />
+											</TableCell>
+										</TableRow>
+									))}
+								</TableBody>
+							</Table>
+						</div>
 					)}
 				</CardContent>
 			</Card>
 		</div>
+	);
+}
+
+function SourcePill({ source }: { source: string }) {
+	// Withings = automatic from a smart scale, manual = user-entered.
+	// Color hints provenance at a glance — useful when debugging why
+	// daily_target is missing (manual readings lack lean_mass).
+	const isWithings = source === "withings";
+	return (
+		<span
+			className={cn(
+				"inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium capitalize",
+				isWithings
+					? "bg-brand/10 text-brand"
+					: "bg-muted text-muted-foreground",
+			)}
+		>
+			{source}
+		</span>
 	);
 }
 
