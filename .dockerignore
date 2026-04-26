@@ -1,0 +1,37 @@
+# Reduce build context size + avoid leaking dev artifacts into the image.
+# Anything not listed here gets COPY'd in the builder stage.
+
+# Build artifacts
+.next
+out
+build
+dist
+
+# Dependencies (re-installed in `deps` stage)
+node_modules
+.pnpm-store
+
+# Local env / secrets
+.env
+.env.*
+!.env.example
+
+# Git / CI metadata not needed at build time
+.git
+.github
+.gitignore
+.dockerignore
+
+# Editor / OS noise
+.vscode
+.idea
+.DS_Store
+*.swp
+
+# Tests / docs / IDE caches
+coverage
+*.log
+README.md
+CLAUDE.md
+AGENTS.md
+.claude

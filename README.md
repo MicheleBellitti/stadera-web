@@ -102,12 +102,106 @@ CI never talks to the backend — it regenerates types from the committed
 `openapi.json` and fails if the diff against `types.ts` is non-empty,
 which catches "snapshot updated but codegen forgotten".
 
+## Deploy
+
+Cloud Run, scale-to-zero, deployed on every push to `main` via
+`.github/workflows/deploy.yml`. Auth is via Workload Identity Federation
+— no JSON service-account keys.
+
+### Container layout
+
+`Dockerfile` is a 3-stage build:
+
+```
+deps    → pnpm install --frozen-lockfile (cache layer keyed on package.json + lockfile)
+builder → pnpm api:types && pnpm build, with NEXT_PUBLIC_API_URL baked in
+runner  → minimal alpine + Node, COPY .next/standalone, run as non-root
+```
+
+`output: 'standalone'` in `next.config.ts` is what makes the runner
+stage tiny — Next emits a self-contained `server.js` with only the
+runtime-required dependencies. Final image is ~180 MB.
+
+```sh
+# Local sanity check
+docker build --build-arg NEXT_PUBLIC_API_URL=http://localhost:8080 -t stadera-web:local .
+docker run --rm -p 3001:3000 stadera-web:local
+# → http://localhost:3001
+```
+
+### One-time GCP setup
+
+These are run by you (the human, not CI), once per project. All the
+values referenced as `${X}` later show up as GitHub Variables / Secrets.
+
+```sh
+PROJECT=stadera-prod
+REGION=europe-west1
+REPO=stadera
+SERVICE=stadera-web
+SA=stadera-web-deployer
+
+# 1. Artifact Registry repo
+gcloud artifacts repositories create $REPO \
+    --repository-format=docker --location=$REGION \
+    --project=$PROJECT
+
+# 2. Service account used by Cloud Run runtime AND by the deploy workflow
+gcloud iam service-accounts create $SA --project=$PROJECT
+SA_EMAIL=$SA@$PROJECT.iam.gserviceaccount.com
+
+gcloud projects add-iam-policy-binding $PROJECT \
+    --member="serviceAccount:$SA_EMAIL" --role=roles/run.admin
+gcloud projects add-iam-policy-binding $PROJECT \
+    --member="serviceAccount:$SA_EMAIL" --role=roles/artifactregistry.writer
+gcloud projects add-iam-policy-binding $PROJECT \
+    --member="serviceAccount:$SA_EMAIL" --role=roles/iam.serviceAccountUser
+
+# 3. Workload Identity Federation: GitHub OIDC → this SA
+POOL=github-pool
+PROVIDER=github-provider
+GITHUB_REPO=MicheleBellitti/stadera-web
+
+gcloud iam workload-identity-pools create $POOL \
+    --location=global --project=$PROJECT
+POOL_ID=$(gcloud iam workload-identity-pools describe $POOL \
+    --location=global --project=$PROJECT --format='value(name)')
+
+gcloud iam workload-identity-pools providers create-oidc $PROVIDER \
+    --location=global --workload-identity-pool=$POOL --project=$PROJECT \
+    --display-name="GitHub Actions" \
+    --attribute-mapping="google.subject=assertion.sub,attribute.repository=assertion.repository" \
+    --attribute-condition="assertion.repository=='$GITHUB_REPO'" \
+    --issuer-uri="https://token.actions.githubusercontent.com"
+
+gcloud iam service-accounts add-iam-policy-binding $SA_EMAIL \
+    --project=$PROJECT --role=roles/iam.workloadIdentityUser \
+    --member="principalSet://iam.googleapis.com/$POOL_ID/attribute.repository/$GITHUB_REPO"
+
+# 4. Print the values to paste into GitHub
+echo "WIF_PROVIDER       = $POOL_ID/providers/$PROVIDER"
+echo "WIF_SERVICE_ACCOUNT = $SA_EMAIL"
+```
+
+### GitHub configuration
+
+In `Settings → Secrets and variables → Actions`:
+
+**Variables:**
+- `GCP_PROJECT` — `stadera-prod`
+- `GCP_REGION` — `europe-west1`
+- `ARTIFACT_REGISTRY_REPO` — `stadera`
+- `CLOUD_RUN_SERVICE` — `stadera-web`
+- `BACKEND_API_URL` — public URL of the backend Cloud Run service (e.g. `https://api.stadera.app`)
+
+**Secrets:**
+- `WIF_PROVIDER` — printed by step 4
+- `WIF_SERVICE_ACCOUNT` — printed by step 4
+
+That's it. Push to `main`, GitHub Actions builds, pushes, and deploys.
+
 ## Roadmap
 
 This repo follows the milestones laid out in
 [stadera/.claude/docs/architecture.md](https://github.com/MicheleBellitti/Stadera/blob/main/.claude/docs/architecture.md).
 The frontend is part of **M5**.
-
-Initial scaffold ships in this PR; subsequent PRs add shadcn/ui, TanStack
-Query, the OpenAPI codegen, and the dashboard / trend / history / profile
-pages.
