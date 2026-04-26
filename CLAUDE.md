@@ -56,7 +56,9 @@ In dev:
 - **Trunk-based**: `main` always deployable, short-lived feature branches.
 - **Branch naming**: `<type>/<short-desc>` (e.g. `feat/dashboard`, `fix/auth-redirect`).
 - **Conventional Commits** enforced. Squash merge: 1 PR = 1 commit on `main`.
-- **CI gate**: `pnpm ci` (`biome check` + `tsc --noEmit` + `next build`) must pass.
+- **CI gate**: `pnpm verify` (`biome check` + codegen-up-to-date check +
+  `tsc --noEmit` + `next build`) must pass. Script is not named `ci`
+  because pnpm 10 reserves that name.
 - **No `.env.example`**: env vars documented in `README.md`.
 
 ## Env vars

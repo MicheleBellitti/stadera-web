@@ -7,7 +7,12 @@
 	},
 	"files": {
 		"ignoreUnknown": false,
-		"includes": ["**", "!src/app/globals.css"]
+		"includes": [
+			"**",
+			"!src/app/globals.css",
+			"!src/lib/api/types.ts",
+			"!src/lib/api/openapi.json"
+		]
 	},
 	"formatter": {
 		"enabled": true,
