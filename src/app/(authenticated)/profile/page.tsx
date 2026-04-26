@@ -197,7 +197,11 @@ export default function ProfilePage() {
 												step="0.1"
 												min={50}
 												max={250}
-												value={field.value}
+												// `valueAsNumber` is `NaN` when the input is empty
+												// or non-numeric; React rejects `value={NaN}` so we
+												// render `""` in that case. The NaN propagates into
+												// form state and zod's `.min()` will fail at submit.
+												value={Number.isFinite(field.value) ? field.value : ""}
 												onChange={(e) => field.onChange(e.target.valueAsNumber)}
 												onBlur={field.onBlur}
 												name={field.name}
@@ -246,7 +250,7 @@ export default function ProfilePage() {
 												step="0.1"
 												min={30}
 												max={300}
-												value={field.value}
+												value={Number.isFinite(field.value) ? field.value : ""}
 												onChange={(e) => field.onChange(e.target.valueAsNumber)}
 												onBlur={field.onBlur}
 												name={field.name}
