@@ -49,7 +49,7 @@ way.
 The README sets these once at the top:
 
 ```sh
-PROJECT=stadera-prod          # GCP project where everything lives
+PROJECT=<your-project-id>          # GCP project where everything lives
 REGION=europe-west1           # closest to user (Italy)
 REPO=stadera                  # Artifact Registry name (just a label)
 SERVICE=stadera-web           # Cloud Run service name
@@ -62,7 +62,7 @@ principal, and you bind permissions to principals.
 
 Useful distinction GCP forces on you:
 
-- **Project ID** — the human string (`stadera-prod`). Stable forever.
+- **Project ID** — the human string (`<your-project-id>`). Stable forever.
 - **Project number** — a 12-digit number assigned at creation
   (`gcloud projects describe $PROJECT --format='value(projectNumber)'`).
   Used in resource paths like the WIF provider URI.
@@ -111,7 +111,7 @@ SA_EMAIL=$SA@$PROJECT.iam.gserviceaccount.com
 ```
 
 **What it does:** creates a non-human identity with email
-`stadera-web-deployer@stadera-prod.iam.gserviceaccount.com`. The
+`stadera-web-deployer@<your-project-id>.iam.gserviceaccount.com`. The
 account exists but has zero permissions yet.
 
 **Why a separate identity:** we don't want CI to run as Michele. Two
@@ -222,7 +222,7 @@ You'll need this string twice:
 - in the GitHub `WIF_PROVIDER` secret, with `/providers/<provider>` appended
 
 `<project_number>` is numeric (12 digits). Distinct from the project ID
-(`stadera-prod`). Get it on demand:
+(`<your-project-id>`). Get it on demand:
 
 ```sh
 gcloud projects describe $PROJECT --format='value(projectNumber)'
@@ -366,7 +366,7 @@ These are the two GitHub Secrets the deploy workflow consumes.
 - `WIF_PROVIDER`:
   `projects/<projectnum>/locations/global/workloadIdentityPools/github-pool/providers/github-provider`
 - `WIF_SERVICE_ACCOUNT`:
-  `stadera-web-deployer@stadera-prod.iam.gserviceaccount.com`
+  `stadera-web-deployer@<your-project-id>.iam.gserviceaccount.com`
 
 Set them via *Settings → Secrets and variables → Actions → Secrets →
 New repository secret*. They're consumed by

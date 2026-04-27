@@ -188,7 +188,7 @@ echo "WIF_SERVICE_ACCOUNT = $SA_EMAIL"
 In `Settings → Secrets and variables → Actions`:
 
 **Variables:**
-- `GCP_PROJECT` — `stadera-prod`
+- `GCP_PROJECT` — your GCP project ID
 - `GCP_REGION` — `europe-west1`
 - `ARTIFACT_REGISTRY_REPO` — `stadera`
 - `CLOUD_RUN_SERVICE` — `stadera-web`
