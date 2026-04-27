@@ -20,6 +20,7 @@
 "use client";
 
 import { zodResolver } from "@hookform/resolvers/zod";
+import { useSearchParams } from "next/navigation";
 import { useEffect } from "react";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
@@ -43,6 +44,7 @@ import {
 	SelectValue,
 } from "@/components/ui/select";
 import { Skeleton } from "@/components/ui/skeleton";
+import { API_URL } from "@/lib/api/client";
 import { ApiError } from "@/lib/api/errors";
 import { useProfile, useUpdateProfile } from "@/lib/api/queries";
 
@@ -91,6 +93,8 @@ const EMPTY: FormValues = {
 export default function ProfilePage() {
 	const { data, isLoading, error } = useProfile();
 	const update = useUpdateProfile();
+	const searchParams = useSearchParams();
+	const withingsStatus = searchParams.get("withings");
 
 	const form = useForm<FormValues>({
 		resolver: zodResolver(schema),
@@ -136,6 +140,8 @@ export default function ProfilePage() {
 					Used to compute BMR, TDEE and your daily kcal target.
 				</p>
 			</header>
+
+			<WithingsConnectCard status={withingsStatus} />
 
 			<Card>
 				<CardHeader>
@@ -292,5 +298,59 @@ function ProfileSkeleton() {
 			<Skeleton className="h-8 w-32" />
 			<Skeleton className="h-64 w-full" />
 		</div>
+	);
+}
+
+/**
+ * Withings connection status + connect entrypoint.
+ *
+ * The button is a plain `<a>` (not fetch) so the OAuth flow is a
+ * full-page navigation. It hits the backend's `/auth/withings/start`
+ * which generates the consent URL, stashes a CSRF cookie carrying
+ * the user_id, and redirects to Withings. After consent, Withings
+ * sends the user back to the backend's callback, which stores
+ * encrypted credentials and redirects here with `?withings=connected`.
+ *
+ * The endpoint doesn't exist yet (mentor-mode backend work pending).
+ * Until it lands, the button 404s — but the UI is ready.
+ *
+ * Future improvement: a `useWithingsStatus()` query that reads from
+ * the backend whether credentials are stored, so we render
+ * "Disconnect" / "Reconnect" buttons accurately. Today we use the
+ * URL param as a one-shot signal post-callback.
+ */
+function WithingsConnectCard({ status }: { status: string | null }) {
+	return (
+		<Card>
+			<CardHeader>
+				<CardTitle className="text-sm font-medium text-muted-foreground">
+					Withings connection
+				</CardTitle>
+			</CardHeader>
+			<CardContent className="space-y-3">
+				{status === "connected" && (
+					<p className="text-sm text-positive">
+						✓ Connected. The daily sync will pull new measurements
+						automatically.
+					</p>
+				)}
+				{status === "error" && (
+					<p className="text-sm text-destructive">
+						Connection failed. Try again or contact support.
+					</p>
+				)}
+				<p className="text-sm text-muted-foreground">
+					Connect your Withings account so Stadera can pull weight, body-fat and
+					lean-mass readings from your smart scale.
+				</p>
+				<Button asChild variant="outline">
+					<a href={`${API_URL}/auth/withings/start`}>
+						{status === "connected"
+							? "Re-connect Withings"
+							: "Connect Withings"}
+					</a>
+				</Button>
+			</CardContent>
+		</Card>
 	);
 }
