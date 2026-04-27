@@ -17,7 +17,14 @@
 
 "use client";
 
-import { History, LineChart, LogOut, User, Weight } from "lucide-react";
+import {
+	History,
+	LineChart,
+	LogOut,
+	Sparkles,
+	User,
+	Weight,
+} from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { API_URL } from "@/lib/api/client";
@@ -40,6 +47,7 @@ const SECTIONS: NavSection[] = [
 		title: "Track",
 		items: [
 			{ href: "/dashboard", label: "Dashboard", icon: Weight },
+			{ href: "/coach", label: "Coach", icon: Sparkles },
 			{ href: "/trend", label: "Trend", icon: LineChart },
 			{ href: "/history", label: "History", icon: History },
 		],
